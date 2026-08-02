@@ -1,0 +1,1239 @@
+{
+  "name": "vectorDB",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        1840
+      ],
+      "id": "",
+      "name": "When chat message received",
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "content": "Dynamic data insert",
+        "height": 352,
+        "width": 1424,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2384,
+        1312
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "",
+              "name": "question",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        1840
+      ],
+      "id": "",
+      "name": "user3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://HOSTIP:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    model: \"qwen2.5:3b\",\n    stream: false,\n    messages: [\n      {\n        role: \"system\",\n        content: $json.systemPrompt\n      },\n      {\n        role: \"user\",\n        content: $json.question\n      }\n    ]\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1168,
+        1840
+      ],
+      "id": "",
+      "name": "planner LLM"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.tool }}",
+              "rightValue": "=memory",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1520,
+        1840
+      ],
+      "id": "",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "",
+              "name": "=systemPrompt",
+              "value": "You are an AI Planner.\n\nYour job is NOT to answer the user's question.\n\nYour ONLY job is to classify the user's request and decide how the request should be processed.\n\nYou have two main processing paths:\n\nDIRECT\nMEMORY\n\n\n========================\nPATH 1: DIRECT\n========================\n\nChoose DIRECT when the user's request clearly does not require accessing, searching, adding, or deleting stored information.\n\nExamples:\n\nHello\nHi\nHow are you?\nGood morning\nGood night\nThank you\nTell me a joke\nTranslate this sentence\nWrite a Python function\nHelp me write an email\nExplain a general concept\nHelp me with general reasoning\nCasual conversation\n\n\n========================\nPATH 2: MEMORY\n========================\n\nChoose MEMORY when the user's request may require information from the vector database or stored memory.\n\nThis includes:\n\nFactual questions\nSaved information\nPreviously stored information\nInformation about people\nProducts\nCustomers\nCompanies\nDocuments\nFAQs\nAny information that may exist in the vector database\n\n\n========================\nIMPORTANT MEMORY RULE\n========================\n\nIf the user asks a factual question about a specific topic, person, product, company, document, or other information that could potentially exist in stored memory, ALWAYS choose MEMORY.\n\nDo NOT choose DIRECT simply because you already know the answer from your own knowledge.\n\nThe purpose of MEMORY is to search the stored information first.\n\nWhen uncertain between DIRECT and MEMORY, ALWAYS choose MEMORY.\n\n\n========================\nMEMORY OPERATIONS\n========================\n\nWhen MEMORY is selected, determine which operation the user wants.\n\nThere are exactly three memory operations:\n\nsearch\ninsert\ndelete\n\n\n========================\nMEMORY SEARCH\n========================\n\nChoose SEARCH when the user wants to find, retrieve, check, know, recall, or search information from stored memory.\n\nExamples:\n\nWhat is Bitcoin?\nTell me about Bitcoin.\nWhat do you know about Bitcoin?\nSearch my saved information about Bitcoin.\nDo you remember my information?\nFind information about Karim.\nWhat information do you have about this product?\nShow me the saved information about this customer.\n\n\n========================\nMEMORY INSERT\n========================\n\nChoose INSERT when the user wants to save, store, remember, add, or insert information into memory.\n\nExamples:\n\nRemember that my name is Sumon.\nSave this information.\nStore this product information.\nRemember that Bitcoin is a cryptocurrency.\nAdd this customer to memory.\nSave this information for later.\nRemember my favorite coin is Bitcoin.\n\n\n========================\nMEMORY DELETE\n========================\n\nChoose DELETE when the user explicitly wants to remove, delete, forget, or erase information from memory.\n\nExamples:\n\nForget my name.\nForget the information about Bitcoin.\nDelete Bitcoin from memory.\nRemove Karim from memory.\nErase this saved information.\nDelete this customer.\nForget what I told you earlier.\n\n\n========================\nMEMORY CONTENT EXTRACTION\n========================\n\nWhen MEMORY is selected, you MUST also extract the actual topic or information that the memory operation should work with.\n\nPut this information in memory_content.\n\nmemory_content must contain ONLY the actual topic or information.\n\nDo NOT include the user's command words in memory_content.\n\nCommand words include:\n\nsave\nstore\nremember\nadd\ninsert\ndelete\nremove\nforget\nsearch\nfind\nretrieve\nlook for\ncheck\n\n\n========================\nINSERT CONTENT RULE\n========================\n\nFor INSERT, remove the save/store/remember/add command and keep only the information that should be stored.\n\nExample:\n\nUser:\nSave bitcoin is crypto\n\nCorrect:\n\ntool = memory\nmemory_action = insert\nmemory_content = bitcoin is crypto\n\nDo NOT produce:\n\nmemory_content = save bitcoin is crypto\n\n\nAnother example:\n\nUser:\nRemember that my favorite color is blue\n\nCorrect:\n\nmemory_content = my favorite color is blue\n\n\n========================\nSEARCH CONTENT RULE\n========================\n\nFor SEARCH, remove the search/question command and keep only the main topic or information that should be searched.\n\nExample:\n\nUser:\nWhat is Bitcoin?\n\nCorrect:\n\ntool = memory\nmemory_action = search\nmemory_content = Bitcoin\n\n\nAnother example:\n\nUser:\nSearch my saved information about my favorite color\n\nCorrect:\n\nmemory_content = my favorite color\n\n\nAnother example:\n\nUser:\nFind information about Karim\n\nCorrect:\n\nmemory_content = Karim\n\n\n========================\nDELETE CONTENT RULE\n========================\n\nFor DELETE, remove the delete/remove/forget command and keep only the specific topic or information that should be deleted.\n\nExample:\n\nUser:\nDelete Bitcoin from memory\n\nCorrect:\n\ntool = memory\nmemory_action = delete\nmemory_content = Bitcoin\n\n\nAnother example:\n\nUser:\nForget my favorite color\n\nCorrect:\n\nmemory_content = my favorite color\n\n\nAnother example:\n\nUser:\nRemove Karim from memory\n\nCorrect:\n\nmemory_content = Karim\n\n\n========================\nDIRECT REQUEST\n========================\n\nWhen DIRECT is selected:\n\ntool = direct\nmemory_action = null\nmemory_content = null\n\n\n========================\nPRIORITY RULES\n========================\n\nRule 1:\n\nIf the user explicitly asks to save information, choose MEMORY and INSERT.\n\nRule 2:\n\nIf the user explicitly asks to delete or forget information, choose MEMORY and DELETE.\n\nRule 3:\n\nIf the user asks to retrieve, search, find, check, know, or recall stored information, choose MEMORY and SEARCH.\n\nRule 4:\n\nIf the user asks a factual question about a topic that may exist in the vector database, choose MEMORY and SEARCH.\n\nRule 5:\n\nIf the request is clearly casual conversation or does not require stored information, choose DIRECT.\n\nRule 6:\n\nWhen uncertain between MEMORY and DIRECT, choose MEMORY and SEARCH.\n\nRule 7:\n\nNever include memory command words inside memory_content.\n\n\n========================\nIMPORTANT OUTPUT RULE\n========================\n\nReturn ONLY one valid JSON object.\n\nThe JSON object MUST contain exactly three fields:\n\ntool\nmemory_action\nmemory_content\n\n\nThe tool value can only be:\n\nmemory\ndirect\n\n\nThe memory_action value can only be:\n\nsearch\ninsert\ndelete\nnull\n\n\nmemory_content must be:\n\nThe actual topic or information for the memory operation.\n\nFor DIRECT requests, memory_content must be null.\n\n\n========================\nOUTPUT EXAMPLES\n========================\n\nUser:\nWhat is Bitcoin?\n\nOutput:\n{\"tool\":\"memory\",\"memory_action\":\"search\",\"memory_content\":\"Bitcoin\"}\n\n\nUser:\nSave bitcoin is crypto\n\nOutput:\n{\"tool\":\"memory\",\"memory_action\":\"insert\",\"memory_content\":\"bitcoin is crypto\"}\n\n\nUser:\nRemember that my name is Sumon\n\nOutput:\n{\"tool\":\"memory\",\"memory_action\":\"insert\",\"memory_content\":\"my name is Sumon\"}\n\n\nUser:\nDelete Bitcoin from memory\n\nOutput:\n{\"tool\":\"memory\",\"memory_action\":\"delete\",\"memory_content\":\"Bitcoin\"}\n\n\nUser:\nForget my favorite color\n\nOutput:\n{\"tool\":\"memory\",\"memory_action\":\"delete\",\"memory_content\":\"my favorite color\"}\n\n\nUser:\nHello how are you?\n\nOutput:\n{\"tool\":\"direct\",\"memory_action\":null,\"memory_content\":null}\n\n\n========================\nSTRICT OUTPUT RULES\n========================\n\nDo not answer the user's question.\n\nDo not explain your decision.\n\nDo not provide reasoning.\n\nDo not use markdown.\n\nDo not use code fences.\n\nDo not add extra fields.\n\nDo not add extra text before or after the JSON.\n\nReturn ONLY the JSON object.",
+              "type": "string"
+            },
+            {
+              "id": "",
+              "name": "question",
+              "value": "={{ $json.question }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        1840
+      ],
+      "id": "",
+      "name": "Planner Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $json.message.content;\n\nconst data = JSON.parse(content);\n\nreturn [\n  {\n    json: {\n      tool: data.tool,\n      memory_action: data.memory_action,\n      memory_content: data.memory_content,\n      question: $('user3').first().json.question\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        1840
+      ],
+      "id": "",
+      "name": "question"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}",
+        "options": {
+          "systemMessage": "==========================\nEmail Assistant\n=========================\n\nYou have access to an Email Tool.\n\nWhenever the user asks to send an email:\n\n- Automatically generate a professional subject if the user does not provide one.\n- Automatically write a professional email body from the user's request.\n- Improve grammar and wording while preserving the user's intent.\n- Do NOT ask for a subject unless the user specifically wants to choose one.\n- Do NOT ask for the email body unless the user's request is too vague to understand.\n\nOnly ask questions if:\n\n1. The recipient email address is missing.\n2. The user's request is too unclear to determine what should be sent.\n\nOtherwise, create the subject and body yourself and immediately call the Email Tool.\n\nExamples:\n\nUser:\nSend an email to john@example.com saying I will be late tomorrow.\n\nSubject:\nRegarding Tomorrow's Schedule\n\nBody:\nDear John,\n\nI hope you are doing well.\n\nI wanted to let you know that I will be late tomorrow. Thank you for your understanding.\n\nKind regards,\n\nUser"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1488,
+        2272
+      ],
+      "id": "",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:3b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        2480
+      ],
+      "id": "",
+      "name": "Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Your Gmail SMTP Send",
+        "toEmail": "={{ $fromAI(\"to\", ``, 'string') }}",
+        "emailFormat": "text",
+        "text": "={{ $fromAI(\"body\", ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSendTool",
+      "typeVersion": 2.1,
+      "position": [
+        1632,
+        2480
+      ],
+      "id": "",
+      "name": "Send Email",
+      "webhookId": "",
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP account 2"
+        }
+      },
+      "notes": "send email tool"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text =$('question').first().json.question;\nconst vector = $input.first().json.embeddings[0]\n\nreturn [\n  {\n    json: {\n      id: Date.now(),\n      text: text,\n      vector: vector,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        2192
+      ],
+      "id": "",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://OLLAMAHOST.147:11434/api/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"model\": \"nomic-embed-text\",\n  \"input\": $json.question\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1760,
+        1824
+      ],
+      "id": "",
+      "name": "Ollama embedding1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://QDRANT:6333/collections/memory/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"vector\":$json.vector ,\n  \"limit\": 1,\n  \"with_payload\": true\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2624,
+        2192
+      ],
+      "id": "",
+      "name": "Qdrant src1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst result = data.result?.[0];\n\nif (!result) {\n  return [\n    {\n      json: {\n        found: false,\n        signal: \"not_found\"\n      }\n    }\n  ];\n}\n\nreturn [\n  {\n    json: {\n      found: true,\n      signal: \"found\",\n      id: result.id,\n      score: result.score,\n      text: result.payload?.text || \"\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3024,
+        2112
+      ],
+      "id": "",
+      "name": "Context1"
+    },
+    {
+      "parameters": {
+        "content": "RAG Vecator data search",
+        "height": 320,
+        "width": 976,
+        "color": "#241F31"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2384,
+        2096
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "",
+                    "leftValue": "={{ $('If1').item.json.memory_action }}",
+                    "rightValue": "insert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "",
+                    "leftValue": "={{ $('If1').item.json.memory_action }}",
+                    "rightValue": "delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('If1').item.json.memory_action }}",
+                    "rightValue": "search",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": ""
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1968,
+        1808
+      ],
+      "id": "",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "",
+              "name": "delete_query",
+              "value": "={{ $('question').item.json.question }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2432,
+        1824
+      ],
+      "id": "",
+      "name": "Delete Target"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://OLLAMAHOST:11434/api/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"input\": \"{{ $json.delete_query }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2624,
+        1824
+      ],
+      "id": "",
+      "name": "Delete Embedding"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://QDRANT:6333/collections/memory/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    vector: $json.embeddings[0],\n    limit: 1,\n    with_payload: true\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2832,
+        1824
+      ],
+      "id": "",
+      "name": "Delete → Qdrant Search"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.result[0].score }}",
+              "rightValue": 0.75,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3024,
+        1824
+      ],
+      "id": "",
+      "name": "Delete Match Check"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://QDRANT:6333/collections/memory/points/delete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    points: [$json.result[0].id]\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3232,
+        1728
+      ],
+      "id": "",
+      "name": "Delete Qdrant Point"
+    },
+    {
+      "parameters": {
+        "content": "Delete vector data",
+        "height": 336,
+        "width": 1312,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2384,
+        1712
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "Data Processing",
+        "height": 224,
+        "width": 1696,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        416,
+        1776
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "use multi agent tool",
+        "height": 432,
+        "width": 608,
+        "color": "#0E0518"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        2208
+      ],
+      "typeVersion": 1,
+      "id": "",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.result[0].score }}",
+              "rightValue": 0.75,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2832,
+        2192
+      ],
+      "id": "",
+      "name": "Search Match Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "",
+              "leftValue": "={{ $json.result[0].score }}",
+              "rightValue": 0.92,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3008,
+        1440
+      ],
+      "id": "",
+      "name": "Delete Match Check1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://OLLAMAHOST:11434/api/embed",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    model: \"nomic-embed-text\",\n    input: $json.insert_query\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2624,
+        1440
+      ],
+      "id": "",
+      "name": "Insert Embedding"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "",
+              "name": "insert_query",
+              "value": "={{ $('If1').item.json.memory_content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2416,
+        1440
+      ],
+      "id": "",
+      "name": "insert Target"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://QDRANT:6333/collections/memory/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    vector: $json.embeddings[0],\n    limit: 1,\n    with_payload: true\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2816,
+        1440
+      ],
+      "id": "",
+      "name": "insert → Qdrant Search"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://QDRANT:6333/collections/memory/points",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    points: [\n      {\n        id: Date.now(),\n        vector: $json.vector,\n        payload: {\n          text: $json.text\n        }\n      }\n    ]\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3472,
+        1440
+      ],
+      "id": "",
+      "name": "insert Qdrant Point"
+    },
+    {
+      "parameters": {
+        "numberInputs": 7
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2432,
+        2464
+      ],
+      "id": "",
+      "name": "Insert Result Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst response =$input.first().json.response;\n\nif (data.signal === \"already_exists\"){\n  return [{\n    json: {\n      signal: \"already_exists\",\n      success: false,\n      response: \"This information is already stored in memory.\"\n    }\n  }];\n}else if(data.signal === \"save\"){\n  return [{\n    json: {\n      signal: \"save\",\n      success: true,\n      response: \"The information has been saved successfully.\"\n    }\n  }];\n}else if(data.signal === \"deleted\"){\n   return [{\n    json: {\n      signal: \"deleted\",\n      success: true,\n      response: \"The information has been deleted successfully.\"\n    }\n  }];\n}else if(data.signal === \"no_data\"){\n   return [{\n    json: {\n      signal: \"not_found\",\n      success: true,\n      response: \"I do not have the data you want to delete.\"\n    }\n  }];\n}else if(data.signal === \"found\"){\n   return [{\n    json: {\n      signal: \"found\",\n      success: true,\n      response:$input.first().json.text \n    }\n  }];\n}else if(data.signal === \"data_not_found\"){\n   return [{\n    json: {\n      signal: \"data_not_found\",\n      success: true,\n      response:\"Sorry, I do not have this data.\"\n    }\n  }];\n}else if(data.signal === \"agent\"){\n   return [{\n    json: {\n      signal: \"agent\",\n      success: true,\n      response:$input.first().json.text\n    }\n  }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        2544
+      ],
+      "id": "",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      signal: \"already_exists\",\n      success: false,\n      response: \"This information is already stored in memory.\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3232,
+        1344
+      ],
+      "id": "",
+      "name": "exists"
+    },
+    {
+      "parameters": {
+        "jsCode": "const vector = $('Insert Embedding').first().json.embeddings[0];\n\nconst content =$('insert Target').first().json.insert_query;\n\nreturn [\n  {\n    json: {\n      \n      vector: vector,\n      text: content\n    }\n  }\n];\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3232,
+        1536
+      ],
+      "id": "",
+      "name": "insert code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const qdrant = $json;\n\nreturn [\n  {\n    json: {\n      \n      success: qdrant.status === \"ok\",\n      signal:\n        qdrant.status === \"ok\"\n          ? \"deleted\"\n          : \"The information could not be deleted.\",\n      result: qdrant.result\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3488,
+        1808
+      ],
+      "id": "",
+      "name": "delete code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\n\nif (\n  data.status === \"ok\" &&\n  data.result?.status === \"acknowledged\"\n) {\n  return [\n    {\n      json: {\n        signal: \"save\",\n        success: true,\n        response: \"saved\"\n      }\n    }\n  ];\n}\n\nreturn [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3632,
+        1440
+      ],
+      "id": "",
+      "name": "save data"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      signal: \"no_data\",\n      success: false,\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3232,
+        1904
+      ],
+      "id": "",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      signal: \"data_not_found\",\n      success: false,\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3024,
+        2272
+      ],
+      "id": "",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      signal: \"agent\",\n      success: true,\n      text: $input.first().json.output\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        2272
+      ],
+      "id": "",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2848,
+        2544
+      ],
+      "id": "",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "user3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "user3": {
+      "main": [
+        [
+          {
+            "node": "Planner Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "planner LLM": {
+      "main": [
+        [
+          {
+            "node": "question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Ollama embedding1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planner Prompt": {
+      "main": [
+        [
+          {
+            "node": "planner LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "question": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Qdrant src1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama embedding1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant src1": {
+      "main": [
+        [
+          {
+            "node": "Search Match Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context1": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "insert Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Target": {
+      "main": [
+        [
+          {
+            "node": "Delete Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Embedding": {
+      "main": [
+        [
+          {
+            "node": "Delete → Qdrant Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete → Qdrant Search": {
+      "main": [
+        [
+          {
+            "node": "Delete Match Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Match Check": {
+      "main": [
+        [
+          {
+            "node": "Delete Qdrant Point",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Match Check": {
+      "main": [
+        [
+          {
+            "node": "Context1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Match Check1": {
+      "main": [
+        [
+          {
+            "node": "exists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "insert code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Embedding": {
+      "main": [
+        [
+          {
+            "node": "insert → Qdrant Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert Target": {
+      "main": [
+        [
+          {
+            "node": "Insert Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert → Qdrant Search": {
+      "main": [
+        [
+          {
+            "node": "Delete Match Check1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Qdrant Point": {
+      "main": [
+        [
+          {
+            "node": "delete code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert Qdrant Point": {
+      "main": [
+        [
+          {
+            "node": "save data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Result Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert code": {
+      "main": [
+        [
+          {
+            "node": "insert Qdrant Point",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "exists": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete code": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "save data": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Insert Result Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": ""
+  },
+  "nodeGroups": [],
+  "id": "",
+  "tags": []
+}
