@@ -1,5 +1,5 @@
 # AI-Controlled Vector Memory Workflow
-![AI-Controlled Vector Database Workflow](./images/workflow.png)
+(./images/workflow.png)
 An AI-powered memory workflow built with **n8n, Ollama, and Qdrant**.
 
 ### Features
