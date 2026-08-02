@@ -1,5 +1,8 @@
 # AI-Controlled Vector Memory Workflow
-(./images/workflow.png)
+
+<p align="center">
+  <img src="./workflow.png" alt="AI Automation Workflow" width="100%">
+</p>
 An AI-powered memory workflow built with **n8n, Ollama, and Qdrant**.
 
 ### Features
